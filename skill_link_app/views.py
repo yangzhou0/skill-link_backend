@@ -50,10 +50,8 @@ def job_title_to_skills(request):
     #JOB_UUID_DICT = {'Software Engineer': '4b7281a983a4574eb887d29f7fbebd88'}
 
     #Unpack incoming JSON for job_title_uuid
-    job_title_uuid = json.load(request)['job-title']
-    print('XXXXXXXXXX',job_title_uuid)
+    job_title_uuid = json.load(request)['uuid']
     
-
     #FUNCTION OUTPUT (before API data is added)
     skill_ability_knowledge_obj = {
         "skill_list" : [],

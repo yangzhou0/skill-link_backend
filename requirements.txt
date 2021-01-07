@@ -20,6 +20,7 @@ coverage==5.3
 cryptography==3.2.1
 decorator==4.4.2
 Django==3.1.4
+django-cors-headers==3.6.0
 django-crispy-forms==1.10.0
 docker==4.3.1
 docker-compose==1.25.5
@@ -32,6 +33,7 @@ googlemaps==4.4.2
 green==3.2.2
 gspread==3.6.0
 idna==2.10
+importlib-metadata==3.3.0
 ipdb==0.13.4
 ipython==7.18.1
 ipython-genutils==0.2.0
@@ -80,8 +82,11 @@ termcolor==1.1.0
 texttable==1.6.3
 toml==0.10.1
 traitlets==5.0.5
+typed-ast==1.4.2
+typing-extensions==3.7.4.3
 Unidecode==1.1.1
 urllib3==1.25.11
 wcwidth==0.1.9
 websocket-client==0.57.0
 wrapt==1.12.1
+zipp==3.4.0

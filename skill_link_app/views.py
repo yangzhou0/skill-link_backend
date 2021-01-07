@@ -67,6 +67,8 @@ def job_title_to_skills(request):
 
     #Convert the GET API call to JSON
     json_response = response.json()
+    #if JSON response is 404 find related jobs... then find skills for those related jobs 
+
 
     #Isolate JSON to only skill data
     skill_list = json_response["skills"]

@@ -88,3 +88,79 @@ def job_title_to_skills(request):
                     skill_list[i]["skill_name"])
     
     return JsonResponse(data=skill_ability_knowledge_obj, status=200, safe=False)
+
+
+
+@csrf_exempt
+def jobs_from_skill_uuids(request):
+    # Request is an Object with a key of "uuids" and value is a list of uuids (request may also have value to set to replace number_of_jobs_returned to possibly make amount of jobs returned dynamic based on user selection on front end)
+    uuid_list = json.load(request)['uuids']
+    job_dict = {}
+    job_array = []
+    number_of_jobs_returned = 10
+
+    # Nested function that does individual skill to jobs search
+    def skill_uuid_to_jobs(skill_uuid):
+        url = f'http://api.dataatwork.org/v1/skills/{skill_uuid}/related_jobs'
+        response = requests.get(url)
+        json_response = response.json()
+        job_list = json_response["jobs"]
+
+        return job_list
+
+    # Loops through every uuid in the list that came from request
+    for uuid in uuid_list:
+        job_list = skill_uuid_to_jobs(uuid)
+        # Loops through skill to jobs search and populates dictionary with job title as key and importance of that skill as value
+        for job in job_list:
+            if job["job_title"] in job_dict:
+                job_dict[job["job_title"]] += job["importance"]
+            else:
+                job_dict[job["job_title"]] = job["importance"]
+
+    # After all skill to job search values (importance) have been added to dict, loop through job_dict and populate list with requested amount of jobs to list (number_of_jobs_returned)
+    for job in job_dict:
+        if len(job_array) < number_of_jobs_returned:
+            job_array.append({job:job_dict[job]})
+
+        # Once number_of_jobs_returned lenght is met, continue to loop through job_dict and compare importance score with scores already in job_list, goal is to populate job list with a number of highest importance values/job titles equal to number_of_jobs_returned
+        else:
+            lowest_score = list(job_array[0].values())[0]
+            index = 0
+            add_new = False
+            for job_index in range(len(job_array)):
+                if list(job_array[job_index].values())[0] < lowest_score:
+                    index = job_index
+                    lowest_score = list(job_array[job_index].values())[0]
+                if list(job_array[job_index].values())[0] < job_dict[job]:
+                    add_new = True
+            if add_new:
+                job_array[index] = {job:job_dict[job]}
+
+    #return job_array
+    return JsonResponse(data=job_array, status=200, safe=False)
+
+# testy_test is variable to test function for the time being
+# testy_test =["6ae28a55456b101be8261e5dee44cd3e", "d1715efc5a67ac1c988152b8136e3dfa","1cea5345d284f36245a94301b114b27c","a636cb69257dcec699bce4f023a05126","2c77c703bd66e104c78b1392c3203362"]
+
+
+#still working on autofill/possible database solution for skill searching
+#limits return skills to abilities
+def get_those_skills():
+    offset = 0
+    skill_dict = {}
+    counter = 0
+
+    for i in range(55):
+        url = f'http://api.dataatwork.org/v1/skills?offset={offset}&limit=500'
+        response = requests.get(url)
+        json_response = response.json()
+        offset += 500
+        for skill in json_response:
+            if not 'links' in skill:
+                if skill['type'] and skill['type'] != "tool":
+                    skill_dict[skill["name"]] = skill["uuid"]
+                    counter+=1
+        print(offset)
+    print(counter)
+    return skill_dict

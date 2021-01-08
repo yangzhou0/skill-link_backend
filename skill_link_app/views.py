@@ -4,53 +4,14 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import requests
 
-''' v Autocomplete feature will be ran on the front end v '''
-# JOB_UUID_DICT = {}
-
-# user_input = 'software'
-
-# def job_auto_complete(request):
-#     #Job Title Autocomplete CONTAINS
-#     #Returns a list of job title suggestions for Autocomplete feature
-
-#     #Compile HTTP GET Request
-#     job_title_uuid_lst = []
-#     job_title_suggestion_lst = []
-#     url = f'http://api.dataatwork.org/v1/jobs/autocomplete?contains={user_input}'
-#     response = requests.get(url)
-#     print(response)
-
-#     #Convert GET request to JSON
-#     json_response = response.json()
-
-#     #Unpack JSON for the Job Title Suggestion's UUID and save to a list
-#     #Unpack JSON for Autocomplete Suggestions and save them to a list
-#     for i in range(len(json_response)):
-#         job_title_uuid_lst.append(json_response[i]['uuid'])
-#         job_title_suggestion_lst.append(json_response[i]['suggestion'])
-    
-#     #Dictionary of Job Title as KEYs and UUIDs as VALUEs
-#     #To be used in a subsequent function
-#     JOB_UUID_DICT = dict(zip(job_title_suggestion_lst, job_title_uuid_lst))
-
-#     #Example of output (A list of job title suggestions)
-#     #print(job_title_suggestion_lst)
-#     return JsonResponse(data=job_title_suggestion_lst, status=200, safe=False)
-''' ^ Autocomplete feature will be ran on the front end ^ '''
-
-
 @csrf_exempt
 def job_title_to_skills(request):
     #Input is a UUID for Job Title
     #Output is an object containing skill_list, ability_list and knowledge_list
 
-
     #SAMPLE SEED DATA
     #job_title = 'Software Engineer'
-    #JOB_UUID_DICT = {'Software Engineer': '4b7281a983a4574eb887d29f7fbebd88'}
-
-    #Unpack incoming JSON for job_title_uuid
-    job_title_uuid = json.load(request)['uuid']
+    #{'Software Engineer': '4b7281a983a4574eb887d29f7fbebd88'}
     
     #FUNCTION OUTPUT (before API data is added)
     skill_ability_knowledge_obj = {
@@ -58,37 +19,130 @@ def job_title_to_skills(request):
         "ability_list" : [],
         "knowledge_list": []
     }
+    
+    #Unpack incoming JSON for job_title_uuid
+    job_title_uuid = json.load(request)['uuid']
 
     #Compile HTTP GET Request
-    url = f'http://api.dataatwork.org/v1/jobs/{job_title_uuid}/related_skills'
-    response = requests.get(url)
-
-    #Convert the GET API call to JSON
-    json_response = response.json()
-    #if JSON response is 404 find related jobs... then find skills for those related jobs 
-
-
-    #Isolate JSON to only skill data
-    skill_list = json_response["skills"]
-
-    #Write top 5 skills/ability/knowledge to skill_ability_knowledge_obj
-    for i in range(len(skill_list)):
-        if skill_list[i]["skill_type"] == "skill" and len(skill_ability_knowledge_obj["skill_list"]) < 5:
-                skill_ability_knowledge_obj["skill_list"].append(
-                    skill_list[i]["skill_name"])
-
-
-        elif skill_list[i]["skill_type"] == "ability" and len(skill_ability_knowledge_obj["ability_list"]) < 5:
-                skill_ability_knowledge_obj["ability_list"].append(
-                    skill_list[i]["skill_name"])
-
-
-        elif skill_list[i]["skill_type"] == "knowledge" and  len(skill_ability_knowledge_obj["knowledge_list"]) < 5:
-                skill_ability_knowledge_obj["knowledge_list"].append(
-                    skill_list[i]["skill_name"])
+    response = requests.get(
+        f'http://api.dataatwork.org/v1/jobs/{job_title_uuid}/related_skills')
     
-    return JsonResponse(data=skill_ability_knowledge_obj, status=200, safe=False)
+    if response.status_code == 404:
+        print('response.status_code == 404 - NOW HANDLING EXCEPTION')
 
+        #Find the job title for the job_title_uuid passed from the front end
+        response = requests.get(
+            f'http://api.dataatwork.org/v1/jobs/{job_title_uuid}')
+        json_response = response.json()
+
+        #Extract first and last word in job title
+        job_title_word_list = json_response['title'].split(' ')
+        first_word_job_title = job_title_word_list[0]
+        last_word_job_title = job_title_word_list[-1]
+
+        #Get assosciated jobs for first word of job title
+        firstword_assosciated_jobs = requests.get(
+            f'http://api.dataatwork.org/v1/jobs/autocomplete?begins_with={first_word_job_title}').json()
+
+        #Get assosciated jobs for last word of job title
+        lastword_assosciated_jobs = requests.get(
+            f'http://api.dataatwork.org/v1/jobs/autocomplete?ends_with={last_word_job_title}').json()
+        
+        #Iterate through firstword_assosciated_jobs for job UUIDs and send API requests until status_code is 200
+        #Results are ordered by strongest assosciations so the first job UUID to return 200 code will be strongest match
+        first_word_related_skills = ''
+        for i in range(len(firstword_assosciated_jobs)):
+            response = requests.get(
+                f'http://api.dataatwork.org/v1/jobs/{firstword_assosciated_jobs[i]["uuid"]}/related_skills')
+            if response.status_code == 200:
+                first_word_related_skills = (response.json())
+                break
+        
+        #Iterate through lastword_assosciated_jobs for job UUIDs and send API requests until status_code is 200
+        #Results are ordered by strongest assosciations so the first job UUID to return 200 code will be strongest match
+        last_word_related_skills = ''
+        for i in range(len(lastword_assosciated_jobs)):
+            response = requests.get(
+                f'http://api.dataatwork.org/v1/jobs/{lastword_assosciated_jobs[i]["uuid"]}/related_skills')
+            if response.status_code == 200:
+                last_word_related_skills = (response.json())
+                break
+
+        #Isolate JSON to only skill data
+        first_word_skill_list = first_word_related_skills["skills"]
+
+        #Write best 3 skills, 2 ability, 3 knowledge to skill_ability_knowledge_obj
+        for i in range(len(first_word_skill_list)):
+            if (first_word_skill_list[i]["skill_type"] == "skill" and
+            len(skill_ability_knowledge_obj["skill_list"]) < 3):
+                    skill_ability_knowledge_obj["skill_list"].append(
+                        first_word_skill_list[i]["skill_name"])
+        
+            elif (first_word_skill_list[i]["skill_type"] == "ability" and
+            len(skill_ability_knowledge_obj["ability_list"]) < 2):
+                    skill_ability_knowledge_obj["ability_list"].append(
+                        first_word_skill_list[i]["skill_name"])
+
+            elif (first_word_skill_list[i]["skill_type"] == "knowledge" and
+            len(skill_ability_knowledge_obj["knowledge_list"]) < 3):
+                    skill_ability_knowledge_obj["knowledge_list"].append(
+                        first_word_skill_list[i]["skill_name"])
+        
+        #Isolate JSON to only skill data
+        last_word_skill_list = last_word_related_skills["skills"]
+
+        #Write best 2 skills, 3 ability, 2 knowledge to skill_ability_knowledge_obj to a total of 5 items per list
+        for i in range(len(last_word_skill_list)):
+            if (last_word_skill_list[i]["skill_type"] == "skill" and 
+            len(skill_ability_knowledge_obj["skill_list"]) < 5):
+                    skill_ability_knowledge_obj["skill_list"].append(
+                        last_word_skill_list[i]["skill_name"])
+        
+            elif (last_word_skill_list[i]["skill_type"] == "ability" and
+            len(skill_ability_knowledge_obj["ability_list"]) < 5):
+                    skill_ability_knowledge_obj["ability_list"].append(
+                        last_word_skill_list[i]["skill_name"])
+
+            elif (last_word_skill_list[i]["skill_type"] == "knowledge" and
+            len(skill_ability_knowledge_obj["knowledge_list"]) < 5):
+                    skill_ability_knowledge_obj["knowledge_list"].append(
+                        last_word_skill_list[i]["skill_name"])
+
+        return JsonResponse(data=skill_ability_knowledge_obj, status=200, safe=False)
+
+    elif response.status_code == 200:
+        #Convert API call to JSON
+        json_response = response.json()
+
+        #Isolate JSON to only skill data
+        skill_list = json_response["skills"]
+
+        #Write top 5 skills/ability/knowledge to skill_ability_knowledge_obj
+        for i in range(len(skill_list)):
+            if (skill_list[i]["skill_type"] == "skill" and
+            len(skill_ability_knowledge_obj["skill_list"]) < 5):
+                    skill_ability_knowledge_obj["skill_list"].append(
+                        skill_list[i]["skill_name"])
+
+            elif (skill_list[i]["skill_type"] == "ability" and
+            len(skill_ability_knowledge_obj["ability_list"]) < 5):
+                    skill_ability_knowledge_obj["ability_list"].append(
+                        skill_list[i]["skill_name"])
+
+            elif (skill_list[i]["skill_type"] == "knowledge" and
+            len(skill_ability_knowledge_obj["knowledge_list"]) < 5):
+                    skill_ability_knowledge_obj["knowledge_list"].append(
+                        skill_list[i]["skill_name"])
+        
+        return JsonResponse(data=skill_ability_knowledge_obj, status=200, safe=False)
+    
+    else:
+        skill_ability_knowledge_obj = {
+        "skill_list" : ["Oops something went wrong!"],
+        "ability_list" : ["Oops something went wrong!"],
+        "knowledge_list": ["Oops something went wrong!"]
+        }
+        return JsonResponse(data=skill_ability_knowledge_obj,status=200, safe=False)
 
 
 @csrf_exempt

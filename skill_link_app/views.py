@@ -55,7 +55,7 @@ def all_job_data(request):
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][1]["DwaTitle"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][2]["DwaTitle"])
 
-    result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][1]['Median']
+    result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median']
 
     #Get knowledge/skills/abilities and append to skill_list in result object
     result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][0]['ElementName'])

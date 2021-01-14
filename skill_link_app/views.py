@@ -54,8 +54,11 @@ def all_job_data(request):
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][0]["DwaTitle"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][1]["DwaTitle"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][2]["DwaTitle"])
-
-    result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median']
+    
+    if occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['RateType'] == "Annual":
+        result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median']
+    else:
+        result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][1]['Median']
 
     #Get knowledge/skills/abilities and append to skill_list in result object
     result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][0]['ElementName'])
@@ -74,11 +77,11 @@ def all_job_data(request):
     #Append school program data to result
     for i in range(len(school_programs_json["SchoolPrograms"])):
         result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["SchoolName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["ProgramName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Address"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["City"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["StateName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Phone"])
+        # result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["ProgramName"])
+        # result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Address"])
+        # result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["City"])
+        # result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["StateName"])
+        # result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Phone"])
         #SHOULD WE CREATE A HELPER FUNCTION TO MAKE ADDRESS/CITY/STATE ALL ONE STRING?
 
     return JsonResponse(data=result, status=200, safe=False)

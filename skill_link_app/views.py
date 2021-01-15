@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import requests
+import re
 
 #HELPER FUNCTION
 def video_link_maker(job_video):
@@ -16,12 +17,12 @@ def all_job_data(request):
     ##Output: an object of all necessary job data
 
     #Seed Data
-    # zipcode = "85250"
-    # job_title = "Nuclear Engineers"
+    zipcode = "10001"
+    job_title = "Nuclear Engineers"
    
-    incoming_job_data = json.load(request)
-    job_title = incoming_job_data["job_title"]
-    zipcode = incoming_job_data["zipcode"]
+    # incoming_job_data = json.load(request)
+    # job_title = incoming_job_data["job_title"]
+    # zipcode = incoming_job_data["zipcode"]
     
     #Make job_title compatible with API
     job_title = job_title.replace(' ', '%20')
@@ -33,8 +34,6 @@ def all_job_data(request):
         "job_median_annual_salary" : "",
         "job_video" : "",
         "related_occupations" : "", #DO WE WANT THIS?
-        "school_programs" : [], 
-        "ebook_list" : [], #NOT BUILD
         "daily_activities": [],
         "ksa_list" : []
     }
@@ -65,22 +64,72 @@ def all_job_data(request):
     result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][0]['ElementName'])
     result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][1]['ElementName'])
 
+    return JsonResponse(data=result, status=200, safe=False)
+
+def learning_resources(request):
+    #INPUT: job_title, zipcode
+    #OUTPUT: an object of learning resources, unique to each job_tile and zipcode
+    result = {
+    "school_programs" : [], 
+    "ebook_list" : [], #NOT BUILT
+    }
+    #SEED DATA:
+    job_title = "Nuclear Engineers"
+    zipcode = "10001"
+    
     #Get school programs
     school_programs_url = f"https://api.careeronestop.org/v1/training/wsDcyeU9muW1AxN/{job_title}/{zipcode}/25/0/0/0/0/0/0/0/0/10"
-    
+    headers = {
+        "Authorization": 
+        "Bearer +h3F09pWZZGpREt8CJ15xFwJIgVHTPzMzmki22tnMRPHuVnoYy8W6a2MI3xLfXZPF3nM6DBqoSyc5aRfnThtBg=="
+    }
+
     school_programs_response = requests.get(school_programs_url, headers=headers)
     school_programs_json = school_programs_response.json()
 
     #Append school program data to result
     for i in range(len(school_programs_json["SchoolPrograms"])):
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["SchoolName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["ProgramName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Address"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["City"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["StateName"])
-        result["school_programs"].append(school_programs_json["SchoolPrograms"][i]["Phone"])
-        #SHOULD WE CREATE A HELPER FUNCTION TO MAKE ADDRESS/CITY/STATE ALL ONE STRING?
+        place = {}
+        school_program = school_programs_json["SchoolPrograms"][i]
+        place["school_name"] = school_program["SchoolName"]
+        place["program_name"] = school_program["ProgramName"]
+        place["address"] = school_program["Address"] + ' ' + school_program["City"] + ' ' + school_program["StateAbbr"] + ' ' + school_program["Zip"]
+        #Fix bad phone numbers - REFACTOR LATER
+        if len(school_program["Phone"]) > 10:
+            place["phone"] = school_program["Phone"][:10]
+        else:
+            place["phone"] = school_program["Phone"]
 
+        #Fix missing URL prefixes
+        if school_program["SchoolUrl"][0:8] != "https://":
+            place["school_url"] = 'https://' + school_program["SchoolUrl"]
+        else:
+            place["school_url"] = school_program["SchoolUrl"]
+        
+        result["school_programs"].append(place)
+    
+    #Fix URL suffix
+    for i in range(len(result["school_programs"])):
+        school_program = result["school_programs"][i]
+        if school_program["school_url"][-1] == '/':
+            school_program["school_url"] = school_program["school_url"][:-1]
+
+    #Use regex to extract domain and top level domain, to be sent to favicon grabber API
+    for i in range(len(result["school_programs"])):
+        school_program = result["school_programs"][i]
+        match = re.findall(r'(\w+\.\w+)$', school_program["school_url"])
+        icon_response = requests.get(f'http://favicongrabber.com/api/grab/{match[0]}')
+        print(match[0],icon_response.status_code)
+
+        #Convert favicon grabber API response to json
+        #Parse through json for icon url, and write to result
+        #If no icon can be found, return response status_code
+        if icon_response.status_code == 200:
+            icon_response = icon_response.json()
+            school_program["img_url"] = icon_response["icons"][0]["src"]
+        else:
+            school_program["img_url"] = icon_response.status_code
+         
     return JsonResponse(data=result, status=200, safe=False)
 
 

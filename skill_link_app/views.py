@@ -17,12 +17,12 @@ def all_job_data(request):
     ##Output: an object of all necessary job data
 
     #Seed Data
-    zipcode = "10001"
-    job_title = "Nuclear Engineers"
+    # zipcode = "10001"
+    # job_title = "Nuclear Engineers"
    
-    # incoming_job_data = json.load(request)
-    # job_title = incoming_job_data["job_title"]
-    # zipcode = incoming_job_data["zipcode"]
+    incoming_job_data = json.load(request)
+    job_title = incoming_job_data["job_title"]
+    zipcode = incoming_job_data["zipcode"]
     
     #Make job_title compatible with API
     job_title = job_title.replace(' ', '%20')
@@ -77,8 +77,9 @@ def learning_resources(request):
     "ebook_list" : [], #NOT BUILT
     }
     #SEED DATA:
-    job_title = "Nuclear Engineers"
-    zipcode = "10001"
+    incoming_job_data = json.load(request)
+    job_title = incoming_job_data["job_title"]
+    zipcode = incoming_job_data["zipcode"]
     
     #Get school programs
     school_programs_url = f"https://api.careeronestop.org/v1/training/wsDcyeU9muW1AxN/{job_title}/{zipcode}/25/0/0/0/0/0/0/0/0/10"

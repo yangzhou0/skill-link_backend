@@ -17,12 +17,12 @@ def all_job_data(request):
     ##Output: an object of all necessary job data
 
     #Seed Data
-    zipcode = "10001"
-    job_title = "Nuclear Engineers"
+    # zipcode = "10001"
+    # job_title = "Nuclear Engineers"
    
-    # incoming_job_data = json.load(request)
-    # job_title = incoming_job_data["job_title"]
-    # zipcode = incoming_job_data["zipcode"]
+    incoming_job_data = json.load(request)
+    job_title = incoming_job_data["job_title"]
+    zipcode = incoming_job_data["zipcode"]
     
     #Make job_title compatible with API
     job_title = job_title.replace(' ', '%20')
@@ -69,6 +69,7 @@ def all_job_data(request):
 
     return JsonResponse(data=result, status=200, safe=False)
 
+@csrf_exempt
 def learning_resources(request):
     #INPUT: job_title, zipcode
     #OUTPUT: an object of learning resources, unique to each job_tile and zipcode
@@ -77,8 +78,11 @@ def learning_resources(request):
     "ebook_list" : [], #NOT BUILT
     }
     #SEED DATA:
-    job_title = "Nuclear Engineers"
-    zipcode = "10001"
+    # job_title = "Statisticians"
+    # zipcode = "11101"
+    incoming_job_data = json.load(request)
+    job_title = incoming_job_data["job_title"]
+    zipcode = incoming_job_data["zipcode"]
     
     #Get school programs
     school_programs_url = f"https://api.careeronestop.org/v1/training/wsDcyeU9muW1AxN/{job_title}/{zipcode}/25/0/0/0/0/0/0/0/0/10"
@@ -120,18 +124,26 @@ def learning_resources(request):
     #Use regex to extract domain and top level domain, to be sent to favicon grabber API
     for i in range(len(result["school_programs"])):
         school_program = result["school_programs"][i]
+        #print('LINE 125',school_program["school_url"])
         match = re.findall(r'(\w+\.\w+)$', school_program["school_url"])
-        icon_response = requests.get(f'http://favicongrabber.com/api/grab/{match[0]}')
-        print(match[0],icon_response.status_code)
+        #print('LINE 127 MATCH=', match)
+        #If REGEX match is found for domain and top level domain, img_url will be set equal to its icon url
+        if len(match) > 0:
+            icon_response = requests.get(f'http://favicongrabber.com/api/grab/{match[0]}')
+            if icon_response.status_code == 200:
+                icon_response = icon_response.json() #Convert favicon grabber API response to json
+                school_program["img_url"] = icon_response["icons"][0]["src"]  #Parse through json for its icon url, and write to the result
 
-        #Convert favicon grabber API response to json
-        #Parse through json for icon url, and write to result
-        #If no icon can be found, return response status_code
-        if icon_response.status_code == 200:
-            icon_response = icon_response.json()
-            school_program["img_url"] = icon_response["icons"][0]["src"]
-        else:
-            school_program["img_url"] = icon_response.status_code
+            #If no icon can be found, img_url will be set equal to its status code
+            else:
+                print('No icon can be found for:', match[0], '...', 'STATUS_CODE:', icon_response.status_code)
+                school_program["img_url"] = icon_response.status_code
+                
+
+        #If no REGEX match is found for domain and top level domain, img_url will be set equal to 404
+        else: 
+            print('No REGEX match could be found for', school_program["school_url"])
+            school_program["img_url"] = 404
          
     return JsonResponse(data=result, status=200, safe=False)
 

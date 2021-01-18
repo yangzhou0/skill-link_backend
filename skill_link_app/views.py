@@ -33,9 +33,11 @@ def all_job_data(request):
         "job_description" : "",
         "job_median_annual_salary" : "",
         "job_video" : "",
-        "related_occupations" : "", #DO WE WANT THIS?
+        "related_occupations" : [], 
         "daily_activities": [],
-        "ksa_list" : []
+        "knowledge_list" : [],
+        "abilities_list" : [],
+        "skills_list" : []
     }
     
     #Variables to reused:
@@ -52,21 +54,33 @@ def all_job_data(request):
         result["job_video"] = video_link_maker(occupation_details_json["OccupationDetail"][i]["COSVideoURL"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][0]["DwaTitle"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][1]["DwaTitle"])
-        result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][2]["DwaTitle"])
     
     if occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['RateType'] == "Annual":
         result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median']
     else:
         result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][1]['Median']
 
-    #Get knowledge/skills/abilities and append to skill_list in result object
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][0]['ElementName'])
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][1]['ElementName'])
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["KnowledgeDataList"][0]['ElementName'])
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["KnowledgeDataList"][1]['ElementName'])
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][0]['ElementName'])
-    result["ksa_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][1]['ElementName'])
+    #Get related occupations and append to related occupations list in result object
+    related_titles = occupation_details_json["OccupationDetail"][0]["RelatedOnetTitles"]
+    dictionary_counter = 0
+    for title in related_titles:
+        result["related_occupations"].append(related_titles[title])
+        dictionary_counter += 1 
+        if dictionary_counter == 3:
+            dictionary_counter = 0
+            break
 
+
+    #Get knowledge/skills/abilities and append to respective list in result object
+    result["knowledge_list"].append(occupation_details_json["OccupationDetail"][0]["KnowledgeDataList"][0]['ElementName'])
+    result["knowledge_list"].append(occupation_details_json["OccupationDetail"][0]["KnowledgeDataList"][1]['ElementName'])
+    result["abilities_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][0]['ElementName'])
+    result["abilities_list"].append(occupation_details_json["OccupationDetail"][0]["AbilityDataList"][1]['ElementName'])
+    result["skills_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][0]['ElementName'])
+    result["skills_list"].append(occupation_details_json["OccupationDetail"][0]["SkillsDataList"][1]['ElementName'])
+
+
+    print(result)
     return JsonResponse(data=result, status=200, safe=False)
 
 @csrf_exempt

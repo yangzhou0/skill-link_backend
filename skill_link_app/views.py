@@ -31,7 +31,7 @@ def all_job_data(request):
     #FUNCTION OUTPUT (before API data is added)
     result = {
         "job_description" : "",
-        "job_median_annual_salary" : "",
+        "job_median_annual_salary" : [],
         "job_video" : "",
         "related_occupations" : [], 
         "daily_activities": [],
@@ -53,12 +53,12 @@ def all_job_data(request):
         result["job_description"] = occupation_details_json["OccupationDetail"][i]['OnetDescription']
         result["job_video"] = video_link_maker(occupation_details_json["OccupationDetail"][i]["COSVideoURL"])
         result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][0]["DwaTitle"])
-        result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][1]["DwaTitle"])
+        result["daily_activities"].append(occupation_details_json["OccupationDetail"][i]["Dwas"][2]["DwaTitle"])
     
     if occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['RateType'] == "Annual":
-        result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median']
+        result["job_median_annual_salary"].append(occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][0]['Median'])
     else:
-        result["job_median_annual_salary"] = occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][1]['Median']
+        result["job_median_annual_salary"].append(occupation_details_json["OccupationDetail"][0]["Wages"]["NationalWagesList"][1]['Median'])
 
     #Get related occupations and append to related occupations list in result object
     related_titles = occupation_details_json["OccupationDetail"][0]["RelatedOnetTitles"]

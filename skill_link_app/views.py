@@ -46,7 +46,7 @@ def all_job_data(request):
     #Get Occupation Details
     occupation_details_url = f'https://api.careeronestop.org/v1/occupation/wsDcyeU9muW1AxN/{job_title}/{zipcode}?training=true&interest=false&videos=true&tasks=false&dwas=true&wages=true&alternateOnetTitles=true&projectedEmployment=true&ooh=false&stateLMILinks=false&relatedOnetTitles=true&skills=true&knowledge=true&ability=true&trainingPrograms=true'
 
-    occupation_details_response = requests.get(occupation_details_url, headers=headers)
+    occupation_details_response = requests.get(occupation_details_url, headers=headers,verify=False)
     occupation_details_json = occupation_details_response.json()
 
     for i in range(len(occupation_details_json["OccupationDetail"])):

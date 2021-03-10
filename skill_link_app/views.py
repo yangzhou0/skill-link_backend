@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from skill_link_app.tlsAdapter import TLSAdapter
 import json
 import requests
 import re
@@ -46,7 +47,11 @@ def all_job_data(request):
     #Get Occupation Details
     occupation_details_url = f'https://api.careeronestop.org/v1/occupation/wsDcyeU9muW1AxN/{job_title}/{zipcode}?training=true&interest=false&videos=true&tasks=false&dwas=true&wages=true&alternateOnetTitles=true&projectedEmployment=true&ooh=false&stateLMILinks=false&relatedOnetTitles=true&skills=true&knowledge=true&ability=true&trainingPrograms=true'
 
-    occupation_details_response = requests.get(occupation_details_url, headers=headers)
+    # Create session
+    session = requests.session()
+    session.mount('https://', TLSAdapter())
+    # Make request
+    occupation_details_response = session.get(occupation_details_url, headers=headers)
     occupation_details_json = occupation_details_response.json()
 
     for i in range(len(occupation_details_json["OccupationDetail"])):
@@ -105,7 +110,11 @@ def learning_resources(request):
         "Bearer +h3F09pWZZGpREt8CJ15xFwJIgVHTPzMzmki22tnMRPHuVnoYy8W6a2MI3xLfXZPF3nM6DBqoSyc5aRfnThtBg=="
     }
 
-    school_programs_response = requests.get(school_programs_url, headers=headers)
+    # Create session
+    session = requests.session()
+    session.mount('https://', TLSAdapter())
+    # Make request
+    school_programs_response = session.get(school_programs_url, headers=headers)
     school_programs_json = school_programs_response.json()
 
     #Append school program data to result

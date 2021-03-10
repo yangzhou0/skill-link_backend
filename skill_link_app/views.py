@@ -9,7 +9,7 @@ import re
 #HELPER FUNCTION
 def video_link_maker(job_video):
     video_code = job_video[-13:-5]
-    iframe = f"<iframe src='http://www.careeronestop.org/videos/Careeronestop-videos-content.aspx?videocode={video_code}' width='560' height='315' frameborder='0' scrolling='no' allowfullscreen/>"
+    iframe = f"<iframe src='https://www.careeronestop.org/videos/Careeronestop-videos-content.aspx?videocode={video_code}' width='560' height='315' frameborder='0' scrolling='no' allowfullscreen/>"
     return iframe
 
 @csrf_exempt
